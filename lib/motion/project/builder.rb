@@ -53,9 +53,11 @@ module Motion; module Project;
 
       # Build vendor libraries.
       vendor_libs = []
+      local_frameworks = Dir[File.join(config.project_dir, 'frameworks','*.framework')].map {|e| File.basename(e) }
       config.vendor_projects.each do |vendor_project|
         vendor_project.build(platform)
-        vendor_libs.concat(vendor_project.libs)
+        # if a framework, include via framework search path, not forced load.
+        vendor_libs.concat(vendor_project.libs) unless local_frameworks.include?(File.basename(vendor_project.path))
         bs_files.concat(vendor_project.bs_files)
       end 
 
@@ -383,7 +385,7 @@ EOS
         framework_search_paths = config.framework_search_paths.map { |x| "-F#{File.expand_path(x)}" }.join(' ')
         frameworks = config.frameworks_dependencies.map { |x| "-framework #{x}" }.join(' ')
         weak_frameworks = config.weak_frameworks.map { |x| "-weak_framework #{x}" }.join(' ')
-        sh "#{cxx} -o \"#{main_exec}\" #{objs_list} #{config.ldflags(platform)} -L#{File.join(datadir, platform)} -lmacruby-static -lobjc -licucore #{framework_search_paths} #{frameworks} #{weak_frameworks} #{config.libs.join(' ')} #{vendor_libs.map { |x| '-force_load "' + x + '"' }.join(' ')}"
+        sh "#{cxx} -o \"#{main_exec}\" #{objs_list} #{config.ldflags(platform)} -L#{File.join(datadir, platform)} -lmacruby-static -lobjc -licucore #{framework_search_paths} #{frameworks} #{weak_frameworks} #{config.libs.join(' ')} #{vendor_libs.map { |x| '-force_load "' + x + '"' }.join(' ')} #{config.extra_flags}"
         main_exec_created = true
       end
 

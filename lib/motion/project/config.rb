@@ -52,10 +52,11 @@ module Motion; module Project
       :resources_dir, :specs_dir, :identifier, :codesign_certificate,
       :provisioning_profile, :device_family, :interface_orientations, :version,
       :short_version, :icons, :prerendered_icon, :background_modes, :seed_id,
-      :entitlements, :fonts, :status_bar_style, :motiondir, :detect_dependencies
+      :entitlements, :fonts, :status_bar_style, :motiondir, :detect_dependencies,
+      :extra_flags
 
     # Internal only.
-    attr_accessor :build_mode, :spec_mode, :distribution_mode, :dependencies
+    attr_accessor :build_mode, :spec_mode, :distribution_mode, :dependencies, :extra_flags
 
     def initialize(project_dir, build_mode)
       @project_dir = project_dir
@@ -65,7 +66,9 @@ module Motion; module Project
       @detect_dependencies = true
       @frameworks = ['UIKit', 'Foundation', 'CoreGraphics']
       @weak_frameworks = []
+      frameworks_dir = File.join(project_dir,'frameworks')
       @framework_search_paths = []
+      @framework_search_paths << frameworks_dir if File.exist?(frameworks_dir)
       @libs = []
       @delegate_class = 'AppDelegate'
       @name = 'Untitled'
@@ -85,6 +88,7 @@ module Motion; module Project
       @entitlements = {}
       @spec_mode = false
       @build_mode = build_mode
+      @extra_flags = ""
     end
 
     OSX_VERSION = `/usr/bin/sw_vers -productVersion`.strip.sub(/\.\d+$/, '').to_f

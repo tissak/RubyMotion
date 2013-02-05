@@ -31,6 +31,28 @@ Then, simply set the RUBYMOTION_LIB environment variable when using +rake+.
   $ cd MyProject
   $ RUBYMOTION_LIB=~/src/RubyMotion/lib rake
 
+== Frameworks Addition
+
+To include a framework, as before add an entry to the app.vendor_project section
+pointing to the header files and the build products (or assume they will be the *.a files).
+
+Then add to the /frameworks folder a symlink to that framework. This will ensure that as
+part of the vendor build phase Bridgesupport is updated with the correct environment.
+
+The framework should also be added to the app.frameworks list just as any core framework would be.
+
+At link time rather than including libraries via -force_load the framework will be referenced normally
+as a -framwork and via the framework search path it should be found.
+
+In summary:
+
+1. copy framework to vendor folder
+2. add app.vendor entry to rakefile
+3. create /frameworks folder
+4. add symlink (absolute path) from vendored folder to frameworks folder
+
+Note. to avoid being too clever you still need to copy any *.bundles to the resources folder manually.
+
 == Contributions
 
 Please use the GitHub pull-request mechanism to submit contributions.
