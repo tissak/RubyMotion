@@ -52,7 +52,7 @@ module Bacon
         puts "##teamcity[testFailed timestamp = '#{java_time}' message = '#{escape_message(error)}' name = '#{escape_message(@@description)}']\n\n"
       end
       duration = ((Time.now - @@started) * 1000).to_i
-      puts "##teamcity[testFinished timestamp = '#{java_time}' duration = '#{duration}' name = '#{escape_message(@@description)}']\n\n"     
+      puts "##teamcity[testFinished timestamp = '#{java_time}' duration = '#{duration}' name = '#{escape_message(@@description)}']\n\n"
     end
 
     def handle_summary
@@ -91,7 +91,7 @@ module Bacon
       end
 
       copy_of_text
-    end   
+    end
 
     def convert_time_to_java_simple_date(time)
       gmt_offset = time.gmt_offset
@@ -455,8 +455,8 @@ module Bacon
   end
 
   class Context
-    attr_reader :name, :block
-    
+    attr_reader :name, :block, :_letBlocks
+
     def initialize(name, before = nil, after = nil, &block)
       @name = name
       @before, @after = (before ? before.dup : []), (after ? after.dup : [])
@@ -505,7 +505,7 @@ module Bacon
       Counter[:specifications] += 1
       @specifications << Specification.new(self, description, block, @before, @after)
     end
-    
+
     def should(*args, &block)
       if Counter[:depth]==0
         it('should '+args.first,&block)
@@ -514,12 +514,42 @@ module Bacon
       end
     end
 
+
+
     def describe(*args, &block)
       context = Bacon::Context.new(args.join(' '), @before, @after, &block)
       (parent_context = self).methods(false).each {|e|
         class<<context; self end.send(:define_method, e) {|*args| parent_context.send(e, *args)}
       }
+
+      if self._letBlocks.present?
+        self._letBlocks.each_pair do |key, value|
+          unless context._letBlocks.present? && context._letBlocks.has_key?(key)
+            class<<context; self end.send(:define_method, key) {|*args| parent_context.send(key, *args)}
+          end
+        end
+      end
+
       context
+    end
+
+    def __memoizedValue
+      @_memoizedValue ||= {}
+    end
+
+    def __letBlocks
+      @_letBlocks ||= {}
+    end
+
+    def let(name, &block)
+      __letBlocks[name] ||= block
+      self.class.send :define_method, name.to_s, ->() do
+        self.executeLet(name)
+      end
+    end
+
+    def executeLet(name)
+      __memoizedValue[name] ||= __letBlocks[name].call
     end
 
     def wait(seconds = nil, &block)
