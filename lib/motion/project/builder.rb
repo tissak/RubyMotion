@@ -1,15 +1,15 @@
 # Copyright (c) 2012, HipByte SPRL and contributors
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # 1. Redistributions of source code must retain the above copyright notice, this
 #    list of conditions and the following disclaimer.
 # 2. Redistributions in binary form must reproduce the above copyright notice,
 #    this list of conditions and the following disclaimer in the documentation
 #    and/or other materials provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -44,11 +44,11 @@ module Motion; module Project;
       sdk = config.sdk(platform)
       cc = config.locate_compiler(platform, 'gcc')
       cxx = config.locate_compiler(platform, 'clang++')
-    
+
       build_dir = File.join(config.versionized_build_dir(platform))
       App.info 'Build', build_dir
- 
-      # Prepare the list of BridgeSupport files needed. 
+
+      # Prepare the list of BridgeSupport files needed.
       bs_files = config.bridgesupport_files
 
       # Build vendor libraries.
@@ -57,7 +57,7 @@ module Motion; module Project;
         vendor_project.build(platform)
         vendor_libs.concat(vendor_project.libs)
         bs_files.concat(vendor_project.bs_files)
-      end 
+      end
 
       # Build object files.
       objs_build_dir = File.join(build_dir, 'objs')
@@ -70,7 +70,7 @@ module Motion; module Project;
         should_rebuild = (!File.exist?(obj) \
             or File.mtime(path) > File.mtime(obj) \
             or File.mtime(ruby) > File.mtime(obj))
- 
+
         # Generate or retrieve init function.
         init_func = should_rebuild ? "MREP_#{`/usr/bin/uuidgen`.strip.gsub('-', '')}" : `#{config.locate_binary('nm')} \"#{obj}\"`.scan(/T\s+_(MREP_.*)/)[0][0]
 
@@ -82,12 +82,12 @@ module Motion; module Project;
             # Locate arch kernel.
             kernel = File.join(datadir, platform, "kernel-#{arch}.bc")
             raise "Can't locate kernel file" unless File.exist?(kernel)
-   
+
             # LLVM bitcode.
             bc = File.join(objs_build_dir, "#{path}.#{arch}.bc")
             bs_flags = bs_files.map { |x| "--uses-bs \"" + x + "\" " }.join(' ')
             sh "/usr/bin/env VM_KERNEL_PATH=\"#{kernel}\" VM_OPT_LEVEL=\"#{config.opt_level}\" #{ruby} #{bs_flags} --emit-llvm \"#{bc}\" #{init_func} \"#{path}\""
-   
+
             # Assembly.
             asm = File.join(objs_build_dir, "#{path}.#{arch}.s")
             llc_arch = case arch
@@ -97,15 +97,15 @@ module Motion; module Project;
               else; arch
             end
             sh "#{llc} \"#{bc}\" -o=\"#{asm}\" -march=#{llc_arch} -relocation-model=pic -disable-fp-elim -jit-enable-eh -disable-cfi"
-   
+
             # Object.
             arch_obj = File.join(objs_build_dir, "#{path}.#{arch}.o")
             sh "#{cc} -fexceptions -c -arch #{arch} \"#{asm}\" -o \"#{arch_obj}\""
-  
+
             [bc, asm].each { |x| File.unlink(x) }
             arch_objs << arch_obj
           end
-   
+
           # Assemble fat binary.
           arch_objs_list = arch_objs.map { |x| "\"#{x}\"" }.join(' ')
           sh "/usr/bin/lipo -create #{arch_objs_list} -output \"#{obj}\""
@@ -122,7 +122,7 @@ module Motion; module Project;
         else
           `/usr/sbin/sysctl -n machdep.cpu.thread_count`.strip.to_i
         end
-      builders_count = 1 if builders_count < 1 
+      builders_count = 1 if builders_count < 1
       builders = []
       builders_count.times do
         queue = []
@@ -150,7 +150,7 @@ module Motion; module Project;
         builder_i += 1
         builder_i = 0 if builder_i == builders_count
       end
- 
+
       # Start build.
       builders.each do |queue, th|
         sleep 0.01 while th.status != 'sleep'
@@ -300,7 +300,7 @@ EOS
 
     SpecLauncher *launcher = [[self alloc] init];
     [[NSNotificationCenter defaultCenter] addObserver:launcher selector:@selector(appLaunched:) name:UIApplicationDidBecomeActiveNotification object:nil];
-    return launcher; 
+    return launcher;
 }
 
 - (void)appLaunched:(id)notification
@@ -353,7 +353,7 @@ EOS
     return retval;
 }
 EOS
- 
+
       # Compile main file.
       main = File.join(objs_build_dir, 'main.mm')
       main_o = File.join(objs_build_dir, 'main.o')
@@ -383,7 +383,7 @@ EOS
         framework_search_paths = config.framework_search_paths.map { |x| "-F#{File.expand_path(x)}" }.join(' ')
         frameworks = config.frameworks_dependencies.map { |x| "-framework #{x}" }.join(' ')
         weak_frameworks = config.weak_frameworks.map { |x| "-weak_framework #{x}" }.join(' ')
-        sh "#{cxx} -o \"#{main_exec}\" #{objs_list} #{config.ldflags(platform)} -L#{File.join(datadir, platform)} -lmacruby-static -lobjc -licucore #{framework_search_paths} #{frameworks} #{weak_frameworks} #{config.libs.join(' ')} #{vendor_libs.map { |x| '-force_load "' + x + '"' }.join(' ')}"
+        sh "#{cxx} -o \"#{main_exec}\" #{objs_list} #{config.ldflags(platform)} -L#{File.join(datadir, platform)} -lmacruby-static -lobjc -licucore #{framework_search_paths} #{frameworks} #{weak_frameworks} #{config.libs.join(' ')} #{vendor_libs.map { |x| '-force_load "' + x + '"' }.join(' ')} #{config.extra_flags}"
         main_exec_created = true
       end
 
@@ -578,7 +578,7 @@ PLIST
           }
           File.open(File.join(xcarchive, 'Info.plist'), 'w') do |io|
             io.write Motion::PropertyList.to_s(info_plist)
-          end 
+          end
         end
       end
 =end
